@@ -10,7 +10,7 @@ const type = 'log';
 const dataFolder = '/Users/lukas/Documents/data/productivity';
 
 readdir(dataFolder, (err, filenames) => {
-  filenames.forEach(indexFile);
+  filenames.reduce(serially(indexFile), Promise.resolve());
 });
 
 watch(dataFolder, (eventType, filename) => {
@@ -30,6 +30,15 @@ function indexFile(filename) {
   });
 
   const docs = bodies.map(body => ({index, type, body}));
+  return docs.reduce(serially(indexDoc), Promise.resolve());
+}
 
-  return docs.map(doc => client.index(doc));
+function indexDoc(doc) {
+  return client.index(doc);
+}
+
+function serially(fn) {
+  return (accumulator, value) => {
+    return accumulator.then(() => fn(value));
+  };
 }
