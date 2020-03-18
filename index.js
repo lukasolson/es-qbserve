@@ -1,44 +1,37 @@
 const {resolve} = require('path');
 const {readdir, watch} = require('fs');
-const elasticsearch = require('elasticsearch');
-const client = new elasticsearch.Client({
-  host: 'elastic:changeme@localhost:9200'
-});
+const enqueue = require('../es-queue')({host: 'elastic:changeme@localhost:9200'});
 
 const index = 'qbserve';
 const type = 'log';
 const dataFolder = '/Users/lukas/Documents/data/productivity';
 
 readdir(dataFolder, (err, filenames) => {
-  filenames.reduce(serially(indexFile), Promise.resolve());
+  filenames.reverse().forEach(indexFile);
 });
 
 watch(dataFolder, (eventType, filename) => {
   indexFile(filename);
 });
 
-function indexFile(filename) {
-  const {history} = require(resolve(dataFolder, filename));
-  const {log, activities, apps, categories} = history;
+function indexFile(filename, attempts = 0) {
+  try {
+    const {history} = require(resolve(dataFolder, filename));
+    const {log, activities, apps, categories} = history;
+    if (!log.length) return;
 
-  const bodies = log.map(entry => {
-    const activity = activities[entry.activity_id];
-    const app = apps[activity.app_id];
-    const category = categories[activity.category_id];
-    const timestamp = new Date(entry.start_time * 1000).toISOString();
-    return {...entry, activity, app, category, '@timestamp': timestamp};
-  });
+    const docs = log.map(entry => {
+      const activity = activities[entry.activity_id];
+      const app = apps[activity.app_id];
+      const category = categories[activity.category_id];
+      const timestamp = new Date(entry.start_time * 1000).toISOString();
+      return {...entry, activity, app, category, '@timestamp': timestamp};
+    });
 
-  const docs = bodies.map(body => ({index, type, body}));
-  return docs.reduce(serially(indexDoc), Promise.resolve());
-}
-
-function indexDoc(doc) {
-  return client.index(doc);
-}
-
-function serially(fn) {
-  return (accumulator, value) => {
-    return accumulator.then(() => fn(value));
-  };
+    enqueue(`${index}-${docs[0]['@timestamp'].substr(0, 10)}`, type, docs);
+  } catch (e) {
+    console.log(e);
+    console.log(`Failed, retrying for the ${++attempts} time...`);
+    setTimeout(() => indexFile(filename, attempts), 1000);
+  }
 }
