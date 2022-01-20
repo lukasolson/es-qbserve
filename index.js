@@ -1,12 +1,16 @@
 const {resolve} = require('path');
 const {readdir, watch} = require('fs');
 const {Client} = require('@elastic/elasticsearch');
-const client = new Client({
-  node: 'http://elastic:changeme@localhost:9200'
-});
 
-const TWO_WEEKS_AGO = parseFloat(`${new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000).getTime()}`.substr(0, 10));
-const dataFolder = '/Users/lukas/Documents/data/productivity';
+const nodes = [
+    'http://elastic:changeme@localhost:9200'
+];
+
+const clients = nodes.map(node => new Client({node}));
+const getClient = () => clients[Math.floor(Math.random() * clients.length)];
+
+const TWO_WEEKS_AGO = parseFloat(`${new Date(Date.now() - 24 * 60 * 60 * 1000).getTime()}`.substr(0, 10));
+const dataFolder = '/Users/lukas/Documents/Qbserve';
 
 readdir(dataFolder, (err, filenames) => {
   filenames.filter(filename => {
@@ -21,12 +25,12 @@ watch(dataFolder, (eventType, filename) => {
 let queuedTimeout = 0;
 let queuedDocs = [];
 
-function indexFile(filename) {
+async function indexFile(filename) {
   console.log(`reading ${filename}...`)
   const {history} = require(resolve(dataFolder, filename));
   const {log, activities, apps, categories} = history;
 
-  const docs = log.map(entry => {
+  const docs = await Promise.all(log.map(async entry => {
     const activity = activities[entry.activity_id];
     const app = apps[activity.app_id];
     const category = categories[activity.category_id];
@@ -34,7 +38,7 @@ function indexFile(filename) {
     const index = `qbserve-${timestamp.substr(0, 10)}`;
     const body = {...entry, activity, app, category, '@timestamp': timestamp};
     return {index, body};
-  });
+  }));
 
   clearTimeout(queuedTimeout);
   queuedDocs = queuedDocs.concat(docs);
@@ -44,18 +48,18 @@ function indexFile(filename) {
   }, 10);
 }
 
-function bulkInsert(docs) {
+async function bulkInsert(docs) {
   if (docs.length <= 0) return;
   const batch = docs.splice(0, 5000);
   console.log(`Indexing ${batch.length} docs...`);
 
-  const body = batch.reduce((actions, {index, body}) => actions.concat([
-    {index: {_index: index }},
+  const body = batch.reduce((actions, {index, body, id}) => actions.concat([
+    {index: {_index: index, _id: id }},
     body
   ]), []);
 
   try {
-    client.bulk({body});
+    await getClient().bulk({body});
   } catch (e) {
     console.log(e);
   }
