@@ -1,0 +1,24 @@
+{
+  "search-session" : {
+    "sessionId" : "80d25789-5902-4579-b6d2-718059adfe78",
+    "status" : "in_progress",
+    "expires" : "2021-04-08T17:31:42.507Z",
+    "created" : "2021-04-01T17:31:42.507Z",
+    "touched" : "2021-04-01T17:31:42.507Z",
+    "idMapping" : {
+      "1ee914691165047ec8058dc756db8af70f823dd0e70338e70ee9e6d8fc6a79b0" : {
+        "id" : "FmxEaEpxaVlTVGJxTHpkWkxjM1E2QUEcOGlReXRrTV9TcHUyRDBGOURuVU5uZzozNDgyNg==",
+        "strategy" : "ese",
+        "status" : "in_progress"
+      }
+    },
+    "persisted" : false,
+    "realmType" : "saml",
+    "realmName" : "cloud-saml-kibana-5417883a16bd46688ced029b2be8d67b",
+    "username" : "966477482"
+  },
+  "type" : "search-session",
+  "references" : [ ],
+  "coreMigrationVersion" : "7.12.0",
+  "updated_at" : "2021-04-01T17:31:42.518Z"
+}
