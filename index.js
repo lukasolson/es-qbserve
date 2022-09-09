@@ -64,5 +64,5 @@ async function bulkInsert(docs) {
     console.log(e);
   }
 
-  if (docs.length) bulkInsert(docs);
+  if (docs.length) return bulkInsert(docs);
 }
