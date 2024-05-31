@@ -3,10 +3,11 @@ const {readdir, watch} = require('fs');
 const {Client} = require('@elastic/elasticsearch');
 
 const nodes = [
-    'http://elastic:changeme@localhost:9200'
+  {node: 'http://elastic:changeme@localhost:9200'},
+  // {node: '', auth: {apiKey: ''}}
 ];
 
-const clients = nodes.map(node => new Client({node}));
+const clients = nodes.map(opts => new Client(opts));
 const getClient = () => clients[Math.floor(Math.random() * clients.length)];
 
 const TWO_WEEKS_AGO = parseFloat(`${new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000).getTime()}`.substr(0, 10));

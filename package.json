@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "@elastic/elasticsearch": "^7.16.0"
+  },
+  "scripts": {
+    "start": "curl -X POST elastic:changeme@localhost:5601/api/saved_objects/_import?createNewCopies=true -H \"kbn-xsrf: true\" --form file=@/Users/lukas/Developer/es-qbserve/exports/8.10.0-SNAPSHOT.ndjson"
   }
 }
+
